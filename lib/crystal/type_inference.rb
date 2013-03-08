@@ -500,7 +500,7 @@ module Crystal
         node.type = node.allocate_type
       else
         type = lookup_object_type(node.allocate_type.name)
-        node.type = type ? type : node.allocate_type.clone
+        node.type = type ? type : ProxyType.new(node.allocate_type.clone, node)
         node.creates_new_type = true
       end
     end
@@ -753,7 +753,7 @@ module Crystal
     end
 
     def visit_pointer_malloc(node)
-      node.type = mod.pointer.clone
+      node.type = ProxyType.new(mod.pointer.clone, node)
       node.creates_new_type = true
     end
 

@@ -192,6 +192,8 @@ module Crystal
         end
 
         unified_type
+      when ProxyType
+        type.target_type = unify_type(type.target_type)
       else
         type
       end

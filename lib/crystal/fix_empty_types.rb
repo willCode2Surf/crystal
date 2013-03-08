@@ -89,6 +89,8 @@ module Crystal
         type.types.each do |type|
           fix_type(type)
         end
+      when ProxyType
+        fix_type(type.target_type)
       end
     end
   end

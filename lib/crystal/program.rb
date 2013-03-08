@@ -127,7 +127,9 @@ module Crystal
 
     def pointer_of(type)
       p = pointer.clone
-      p.var.type = type
+      v = Var.new 'p', type
+      p.var.bind_to v
+      # p.var.type = type
       p
     end
 

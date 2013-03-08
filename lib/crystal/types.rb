@@ -750,6 +750,55 @@ module Crystal
     end
   end
 
+  class ProxyType < Type
+    attr_accessor :target_type
+    attr_accessor :node
+
+    undef metaclass
+    undef instance_type
+    undef each
+    undef union?
+    undef nilable?
+    undef nil_type?
+    undef nilable_able?
+    undef pointer_type?
+    undef passed_as_self?
+    undef is_restriction_of?
+    undef implements?
+    undef filter_by
+    undef full_name
+    undef internal_full_name
+
+    def initialize(target_type, node)
+      @target_type = target_type
+      @node = node
+    end
+
+    def ==(other)
+      @target_type == other
+    end
+
+    def hash
+      @target_type.hash
+    end
+
+    def eql?(other)
+      @target_type.eql?(other)
+    end
+
+    def is_a?(type)
+      type == ProxyType || @target_type.is_a?(type)
+    end
+
+    def to_s
+      "Proxy(#{@target_type})"
+    end
+
+    def method_missing(name, *args, &block)
+      @target_type.send name, *args, &block
+    end
+  end
+
   class SelfType
     def self.is_restriction_of?(type, owner)
       owner.is_restriction_of?(type, owner)
