@@ -324,9 +324,16 @@ module Crystal
     end
 
     def visit_class_def(node)
-      @str << "generic " if node.generic
       @str << "class "
       @str << node.name
+      if node.type_vars
+        @str << "["
+        node.type_vars.each_with_index do |type_var, i|
+          @str << ", " if i > 0
+          @str << type_var
+        end
+        @str << "]"
+      end
       if node.superclass
         @str << " < "
         node.superclass.accept self

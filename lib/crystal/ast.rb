@@ -177,14 +177,14 @@ module Crystal
     attr_accessor :name
     attr_accessor :body
     attr_accessor :superclass
-    attr_accessor :generic
+    attr_accessor :type_vars
     attr_accessor :name_column_number
 
-    def initialize(name, body = nil, superclass = nil, generic = false, name_column_number = nil)
+    def initialize(name, body = nil, superclass = nil, type_vars = nil, name_column_number = nil)
       @name = name
       @body = Expressions.from body
       @body.parent = self if @body
-      @generic = generic
+      @type_vars = type_vars
       @superclass = superclass
       @name_column_number = name_column_number
     end
@@ -194,14 +194,14 @@ module Crystal
     end
 
     def ==(other)
-      other.is_a?(ClassDef) && other.name == name && other.body == body && other.superclass == superclass && other.generic == generic
+      other.is_a?(ClassDef) && other.name == name && other.body == body && other.superclass == superclass && other.type_vars == type_vars
     end
 
     def clone_from(other)
       @name = other.name
       @body = other.body.clone
       @superclass = other.superclass
-      @generic = other.generic
+      @type_vars = other.type_vars
       @name_column_number = other.name_column_number
     end
   end

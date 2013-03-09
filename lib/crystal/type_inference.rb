@@ -191,8 +191,8 @@ module Crystal
           node.raise "superclass mismatch for class #{type.name} (#{parent.name} for #{type.superclass.name})"
         end
       else
-        type = ObjectType.new node.name, parent, current_type
-        type.generic = node.generic || parent.generic
+        type = ObjectType.new node.name, parent, current_type, node.type_vars
+        type.type_vars = parent.type_vars unless node.type_vars
         current_type.types[node.name] = type
       end
 

@@ -240,12 +240,19 @@ module Crystal
   end
 
   class ClassType < ModuleType
-    def initialize(name, parent_type, container = nil)
+    attr_accessor :type_vars
+
+    def initialize(name, parent_type, container = nil, type_vars = nil)
       super(name, container, parent_type ? [parent_type] : [])
+      @type_vars = type_vars
     end
 
     def superclass
       @parents.find { |parent| parent.is_a?(ClassType) }
+    end
+
+    def generic
+      !!@type_vars
     end
   end
 
@@ -254,7 +261,7 @@ module Crystal
     attr_reader :llvm_size
 
     def initialize(name, parent_type, llvm_type, llvm_size, container = nil)
-      super(name, parent_type, container)
+      super(name, parent_type, container, nil)
       @llvm_type = llvm_type
       @llvm_size = llvm_size
     end
@@ -274,12 +281,11 @@ module Crystal
 
   class ObjectType < ClassType
     attr_accessor :instance_vars
-    attr_accessor :generic
     attr_accessor :string_rep
     attr_reader :hash
     @@id = 0
 
-    def initialize(name, parent_type = nil, container = nil)
+    def initialize(name, parent_type = nil, container = nil, type_vars = nil)
       super
       @instance_vars = {}
       @hash = name.hash
@@ -357,7 +363,7 @@ module Crystal
       obj.defs = defs
       obj.types = types
       obj.parents = parents
-      obj.generic = generic
+      obj.type_vars = type_vars
       obj.string_rep = string_rep
       obj
     end
@@ -383,7 +389,7 @@ module Crystal
     attr_accessor :var
 
     def initialize(parent_type = nil, container = nil, var = Var.new('var'))
-      super("Pointer", parent_type, container)
+      super("Pointer", parent_type, container, ["T"])
       @var = var
     end
 

@@ -157,7 +157,7 @@ class Crystal::ObjectType
   end
 
   def generic!
-    @generic = true
+    @type_vars = []
     self
   end
 end

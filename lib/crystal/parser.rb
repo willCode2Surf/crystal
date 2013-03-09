@@ -510,9 +510,6 @@ module Crystal
           node_and_next_token BoolLiteral.new(true)
         when :yield
           parse_yield
-        when :generic
-          next_token_skip_space_or_newline
-          parse_class_def(true)
         when :class
           parse_class_def
         when :module
@@ -887,7 +884,7 @@ module Crystal
       end
     end
 
-    def parse_class_def(generic = false)
+    def parse_class_def
       location = @token.location
 
       next_token_skip_space_or_newline
@@ -895,6 +892,26 @@ module Crystal
 
       name = @token.value
       name_column_number = @token.column_number
+      next_token
+
+      type_vars = nil
+      case @token.type
+      when :"["
+        type_vars = []
+        next_token_skip_space_or_newline
+        while @token.type != :"]"
+          check :CONST
+          type_vars.push @token.value
+
+          next_token_skip_space_or_newline
+          if @token.type == :","
+            next_token_skip_space_or_newline
+          end
+        end
+      when :"[]"
+        type_vars = []
+      end
+
       next_token_skip_space
 
       superclass = nil
@@ -910,7 +927,7 @@ module Crystal
       check_ident :end
       next_token_skip_space
 
-      class_def = ClassDef.new name, body, superclass, generic, name_column_number
+      class_def = ClassDef.new name, body, superclass, type_vars, name_column_number
       class_def.location = location
       class_def
     end

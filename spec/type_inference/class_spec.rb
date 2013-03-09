@@ -19,7 +19,7 @@ describe 'Type inference: class' do
 
   it "types instance variable" do
     input = parse %(
-      generic class Foo
+      class Foo[]
         def set
           @coco = 2
         end
@@ -34,7 +34,7 @@ describe 'Type inference: class' do
 
   it "types instance variable" do
     input = parse %(
-      generic class Foo
+      class Foo[]
         def set(value)
           @coco = value
         end
@@ -53,7 +53,7 @@ describe 'Type inference: class' do
 
   it "types instance variable on getter" do
     input = parse %(
-      generic class Foo
+      class Foo[]
         def set(value)
           @coco = value
         end
@@ -80,7 +80,7 @@ describe 'Type inference: class' do
     input = parse %(
       require "prelude"
 
-      generic class Node
+      class Node[]
         def add
           if @next
             @next.add
@@ -95,15 +95,14 @@ describe 'Type inference: class' do
       n
     )
     mod = infer_type input
-    recursive_type = ObjectType.new('Node')
-    recursive_type.generic = true
+    recursive_type = ObjectType.new('Node').generic!
     recursive_type.with_var("@next", [recursive_type, mod.nil].union)
     input.last.type.should eq(recursive_type)
   end
 
   it "types separately method calls that create instances" do
     assert_type(%(
-      generic class Node
+      class Node[]
         #{rw :value}
       end
 
@@ -122,7 +121,7 @@ describe 'Type inference: class' do
 
   it "types separately method calls that create instances with two instance vars" do
     assert_type(%(
-      generic class Node
+      class Node[]
         #{rw :x}
         #{rw :y}
       end
@@ -144,7 +143,7 @@ describe 'Type inference: class' do
 
   it "types self inside method call without obj" do
     assert_type(%(
-      generic class Foo
+      class Foo[]
         def foo
           bar
         end
@@ -160,7 +159,7 @@ describe 'Type inference: class' do
 
   it "types with two instance vars" do
     nodes = parse %Q(
-      generic class Foo
+      class Foo[]
         #{rw :a}
         #{rw :b}
       end
@@ -177,7 +176,7 @@ describe 'Type inference: class' do
 
   it "types instance variable as nilable if read before write" do
     assert_type(%(
-      generic class Foo
+      class Foo[]
         def initialize
           a = @coco
           @coco = 2
@@ -190,7 +189,7 @@ describe 'Type inference: class' do
 
   it "types instance variable as nilable if inside if" do
     assert_type(%(
-      generic class Foo
+      class Foo[]
         def initialize
           if false
             @coco = 2
@@ -204,7 +203,7 @@ describe 'Type inference: class' do
 
   it "doesn't type instance variable as nilable if inside if but had type" do
     assert_type(%(
-      generic class Foo
+      class Foo[]
         def initialize
           @coco = 2
           if false
@@ -219,7 +218,7 @@ describe 'Type inference: class' do
 
   it "types instance variable as nilable if inside while" do
     assert_type(%(
-      generic class Foo
+      class Foo[]
         def initialize
           while false
             @coco = 2

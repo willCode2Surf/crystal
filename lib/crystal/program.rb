@@ -33,7 +33,7 @@ module Crystal
       string.lookup_instance_var('@length').type = int
       string.lookup_instance_var('@c').type = char
 
-      array = @types["Array"] = ObjectType.new "Array", object, self
+      array = @types["Array"] = ObjectType.new "Array", object, self, ["T"]
       array.string_rep = proc do |type|
         buffer = type.instance_vars["@buffer"]
         if buffer
@@ -43,7 +43,6 @@ module Crystal
           nil
         end
       end
-      array.generic = true
 
       @types["ARGC_UNSAFE"] = Const.new "ARGC_UNSAFE", Crystal::ARGC.new(int), self
       @types["ARGV_UNSAFE"] = Const.new "ARGV_UNSAFE", Crystal::ARGV.new(pointer_of(pointer_of(char))), self
