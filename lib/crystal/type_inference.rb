@@ -153,7 +153,14 @@ module Crystal
           if arg.type_restriction == :self
             arg.type = SelfType
           else
-            arg.type = lookup_ident_type(arg.type_restriction)
+            if target_type.generic &&
+                arg.type_restriction.names.length == 1 &&
+                type_var = target_type.type_vars[arg.type_restriction.names.first]
+              arg.type = TypeVarType.new(type_var.name)
+              node.generic = true
+            else
+              arg.type = lookup_ident_type(arg.type_restriction)
+            end
           end
         end
       end
@@ -191,8 +198,12 @@ module Crystal
           node.raise "superclass mismatch for class #{type.name} (#{parent.name} for #{type.superclass.name})"
         end
       else
-        type = ObjectType.new node.name, parent, current_type, node.type_vars
-        type.type_vars = parent.type_vars unless node.type_vars
+        type_vars = nil
+        if node.type_vars
+          type_vars = node.type_vars.each_with_object({}) { |type_var, hash| hash[type_var] = Var.new(type_var) }
+        end
+        type = ObjectType.new node.name, parent, current_type, type_vars
+        type.type_vars = parent.type_vars.clone unless node.type_vars
         current_type.types[node.name] = type
       end
 

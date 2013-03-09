@@ -33,7 +33,7 @@ module Crystal
       string.lookup_instance_var('@length').type = int
       string.lookup_instance_var('@c').type = char
 
-      array = @types["Array"] = ObjectType.new "Array", object, self, ["T"]
+      array = @types["Array"] = ObjectType.new "Array", object, self, "T" => Var.new("T")
       array.string_rep = proc do |type|
         buffer = type.instance_vars["@buffer"]
         if buffer

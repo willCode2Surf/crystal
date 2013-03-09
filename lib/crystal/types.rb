@@ -6,6 +6,10 @@ module Crystal
       @metaclass ||= Metaclass.new(self)
     end
 
+    def generic
+      false
+    end
+
     def instance_type
       self
     end
@@ -389,7 +393,7 @@ module Crystal
     attr_accessor :var
 
     def initialize(parent_type = nil, container = nil, var = Var.new('var'))
-      super("Pointer", parent_type, container, ["T"])
+      super("Pointer", parent_type, container, {"T" => Var.new("T")})
       @var = var
     end
 
@@ -761,6 +765,7 @@ module Crystal
     attr_accessor :node
 
     undef metaclass
+    undef generic
     undef instance_type
     undef each
     undef union?
@@ -816,6 +821,18 @@ module Crystal
 
     def self.parents
       []
+    end
+  end
+
+  class TypeVarType
+    attr_accessor :name
+
+    def initialize(name)
+      @name = name
+    end
+
+    def is_restriction_of?(type, owner)
+      true
     end
   end
 end
