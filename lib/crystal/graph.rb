@@ -40,16 +40,16 @@ module Crystal
     end
 
     def type_node(type)
-      node = @g.get_node(type.object_id.to_s)
+      node = @g.get_node(type.type_id.to_s)
       unless node
         case type
         when ObjectType
-          node = @g.add_nodes type.object_id.to_s, :shape => :record, :label => type.full_name
+          node = @g.add_nodes type.type_id.to_s, :shape => :record, :label => type.full_name
           add_object_type_edges node, type
         when nil
-          node = @g.add_nodes type.object_id.to_s, :shape => :record, :label => 'nil'
+          node = @g.add_nodes type.type_id.to_s, :shape => :record, :label => 'nil'
         else
-          node = @g.add_nodes type.object_id.to_s, :label => type.full_name
+          node = @g.add_nodes type.type_id.to_s, :label => type.full_name
         end
       end
       node

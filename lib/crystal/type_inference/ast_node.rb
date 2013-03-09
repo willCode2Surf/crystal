@@ -10,7 +10,7 @@ module Crystal
     end
 
     def type=(type)
-      return if type.nil? || @type.object_id == type.object_id
+      return if type.nil? || @type.type_id == type.type_id
 
       set_type(type)
       notify_observers
@@ -36,7 +36,7 @@ module Crystal
       else
         new_type = Type.merge(@type, node.type)
       end
-      return if @type.object_id == new_type.object_id
+      return if @type.type_id == new_type.type_id
       set_type(new_type)
       @dirty = true
       propagate
@@ -66,7 +66,7 @@ module Crystal
         new_type = Type.merge(@type, from.type)
       end
 
-      return if @type.object_id == new_type.object_id
+      return if @type.type_id == new_type.type_id
       set_type(new_type)
       @dirty = true
     end

@@ -148,7 +148,7 @@ module Crystal
       else
         target_type = current_type
       end
-      node.args.each do |arg|
+      node.args.each_with_index do |arg, i|
         if arg.type_restriction
           if arg.type_restriction == :self
             arg.type = SelfType
@@ -157,7 +157,8 @@ module Crystal
                 arg.type_restriction.names.length == 1 &&
                 type_var = target_type.type_vars[arg.type_restriction.names.first]
               arg.type = TypeVarType.new(type_var.name)
-              node.generic = true
+              node.type_vars ||= {}
+              node.type_vars[i] = type_var.name
             else
               arg.type = lookup_ident_type(arg.type_restriction)
             end
@@ -511,7 +512,14 @@ module Crystal
         node.type = node.allocate_type
       else
         type = lookup_object_type(node.allocate_type.name)
-        node.type = type ? type : ProxyType.new(node.allocate_type.clone, node)
+        if type
+          node.type = type
+        else
+          # TODO: generics
+          # generic_type = mod.lookup_generic_type(node.allocate_type, node.allocate_type.type_vars)
+          # node.type = ProxyType.new(generic_type, node)
+          node.type = ProxyType.new(node.allocate_type.clone, node)
+        end
         node.creates_new_type = true
       end
     end
@@ -751,6 +759,7 @@ module Crystal
     end
 
     def visit_pointer_of(node)
+      # TODO: generics?
       ptr = mod.pointer.clone
       ptr.var = if node.var.is_a?(Var)
                   var = lookup_var node.var.name
@@ -764,6 +773,9 @@ module Crystal
     end
 
     def visit_pointer_malloc(node)
+      # TODO: generics
+      # generic_type = mod.lookup_generic_type(mod.pointer, mod.pointer.type_vars)
+      # node.type = ProxyType.new(generic_type, node)
       node.type = ProxyType.new(mod.pointer.clone, node)
       node.creates_new_type = true
     end
@@ -790,9 +802,9 @@ module Crystal
       if type.is_a?(ObjectType)
         node.type = type
       else
-        pointer_type = mod.pointer.clone
-        pointer_type.var.type = type
-        node.type = pointer_type
+        # TODO: generics?
+        # node.type = ProxyType.new(mod.pointer_of(type), node)
+        node.type = mod.pointer_of(type)
       end
     end
 

@@ -11,7 +11,7 @@ class Array[T]
     @buffer = Pointer.malloc(initial_capacity)
   end
 
-  def initialize(size, value)
+  def initialize(size, value : T)
     @length = size
     @capacity = size
     @buffer = Pointer.malloc(size, value)
@@ -66,7 +66,7 @@ class Array[T]
     Array.new(count) { |i| @buffer[start + i] }
   end
 
-  def push(value)
+  def push(value : T)
     check_needs_resize
     @buffer[@length] = value
     @length += 1
@@ -103,7 +103,7 @@ class Array[T]
     self[@length - 1]
   end
 
-  def insert(index : Int, obj)
+  def insert(index : Int, obj : T)
     check_needs_resize
     index += length if index < 0
     (@buffer + index + 1).memmove(@buffer + index, length - index)

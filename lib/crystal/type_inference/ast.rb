@@ -48,7 +48,7 @@ module Crystal
   class Def
     attr_accessor :owner
     attr_accessor :instances
-    attr_accessor :generic
+    attr_accessor :type_vars
 
     def add_instance(a_def, arg_types = a_def.args.map(&:type))
       @instances ||= {}

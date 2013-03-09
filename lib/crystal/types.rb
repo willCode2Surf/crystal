@@ -75,15 +75,16 @@ module Crystal
     end
 
     def self.merge(type1, type2)
-      return type1 if type1.equal?(type2)
+      return type1 if type1.equal?(type2) || type2.nil?
+      return type2 if type1.nil?
 
       types = [type1, type2]
-      all_types = types.map { |type| type.is_a?(UnionType) ? type.types : type }.flatten.uniq(&:object_id)
+      all_types = types.map { |type| type.is_a?(UnionType) ? type.types : type }.flatten.uniq(&:type_id)
 
-      union_object_ids = nil
+      union_type_ids = nil
 
       types.each do |t|
-        return t if t.is_a?(UnionType) && t.types.length == all_types.length && t.types.map(&:object_id) == (union_object_ids ||= all_types.map(&:object_id))
+        return t if t.is_a?(UnionType) && t.types.length == all_types.length && t.types.map(&:type_id) == (union_type_ids ||= all_types.map(&:type_id))
       end
 
       UnionType.new(*all_types)
@@ -186,11 +187,11 @@ module Crystal
     end
 
     def add_def_instance(name, arg_types, typed_def)
-      @def_instances[[name] + arg_types.map(&:object_id)] = typed_def
+      @def_instances[[name] + arg_types.map(&:type_id)] = typed_def
     end
 
     def lookup_def_instance(name, arg_types)
-      @def_instances[[name] + arg_types.map(&:object_id)]
+      @def_instances[[name] + arg_types.map(&:type_id)]
     end
 
     def has_restricted_defs?(name)
@@ -223,8 +224,8 @@ module Crystal
     end
 
     def lookup_type(names, already_looked_up = {})
-      return nil if already_looked_up[object_id]
-      already_looked_up[object_id] = true
+      return nil if already_looked_up[type_id]
+      already_looked_up[type_id] = true
 
       type = self
       names.each do |name|
@@ -355,9 +356,9 @@ module Crystal
     def clone(types_context = {})
       return self if !generic && Crystal::GENERIC
 
-      obj = types_context[object_id] and return obj
+      obj = types_context[type_id] and return obj
 
-      obj = types_context[object_id] = ObjectType.new name, @parent_type, @container
+      obj = types_context[type_id] = ObjectType.new name, @parent_type, @container
       obj.instance_vars = Hash[instance_vars.map do |name, var|
         cloned_var = var.clone
         cloned_var.type = var.type.clone(types_context) if var.type
@@ -406,11 +407,11 @@ module Crystal
     end
 
     def clone(types_context = {})
-      pointer = types_context[object_id] and return pointer
+      pointer = types_context[type_id] and return pointer
 
       cloned_var = var.clone
 
-      pointer = types_context[object_id] = PointerType.new @parent_type, @container, cloned_var
+      pointer = types_context[type_id] = PointerType.new @parent_type, @container, cloned_var
       pointer.var.type = var.type.clone(types_context)
       pointer.defs = defs
       pointer.types = types
@@ -543,8 +544,8 @@ module Crystal
     end
 
     def clone(types_context = {})
-      cloned = types_context[object_id] and return cloned
-      types_context[object_id] = UnionType.new(*types.map { |type| type.clone(types_context) })
+      cloned = types_context[type_id] and return cloned
+      types_context[type_id] = UnionType.new(*types.map { |type| type.clone(types_context) })
     end
 
     def name
@@ -801,6 +802,10 @@ module Crystal
       type == ProxyType || @target_type.is_a?(type)
     end
 
+    def type_id
+      @target_type.type_id
+    end
+
     def to_s
       "Proxy(#{@target_type})"
     end
@@ -833,6 +838,10 @@ module Crystal
 
     def is_restriction_of?(type, owner)
       true
+    end
+
+    def to_s
+      name
     end
   end
 end

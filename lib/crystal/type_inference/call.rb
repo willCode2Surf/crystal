@@ -16,8 +16,8 @@ module Crystal
       return unless can_calculate_type?
 
       # Ignore extra recalculations when more than one argument changes at the same time
-      types_signature = args.map { |arg| arg.type.object_id }
-      types_signature << obj.type.object_id if obj
+      types_signature = args.map { |arg| arg.type.type_id }
+      types_signature << obj.type.type_id if obj
       return if @types_signature == types_signature
       @types_signature = types_signature
 
@@ -50,6 +50,26 @@ module Crystal
         check_args_type_match typed_def
       else
         arg_types = args.map &:type
+
+        # TODO: generics
+        # if untyped_def.type_vars
+        #   new_type_vars = {}
+        #   untyped_def.type_vars.each do |index, name|
+        #     call_type = arg_types[index]
+        #     self_type_type = self_type.type_vars[name].type
+        #     new_type = Type.merge(call_type, self_type_type)
+        #     if new_type != self_type_type
+        #       new_type_vars[name] = Var.new(name, new_type)
+        #     end
+        #   end
+
+        #   unless new_type_vars.empty?
+        #     generic_type = mod.lookup_generic_type(self_type.target_type, new_type_vars)
+        #     self_type.node.type = ProxyType.new(generic_type, self_type.node)
+        #     return
+        #   end
+        # end
+
         typed_def = untyped_def.lookup_instance(arg_types) ||
                     self_type.lookup_def_instance(name, arg_types) ||
                     parent_visitor.lookup_def_instance(owner, untyped_def, arg_types)

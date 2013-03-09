@@ -9,6 +9,7 @@ module Crystal
 
     attr_accessor :symbols
     attr_accessor :global_vars
+    attr_accessor :generic_types
 
     def initialize
       super('main')
@@ -56,7 +57,21 @@ module Crystal
 
       @nil_var = Var.new('nil', self.nil)
 
+      @generic_types = Hash.new { |h, k| h[k] = {} }
+
       define_primitives
+    end
+
+    def lookup_generic_type(type, type_vars)
+      key = type_vars.map { |k, v| [k, v.type] }
+      full_name = type.full_name
+      generic_type = @generic_types[full_name][key]
+      unless generic_type
+        generic_type = type.clone
+        generic_type.type_vars = type_vars
+        @generic_types[full_name][key] = generic_type
+      end
+      generic_type
     end
 
     def unify(node)
