@@ -806,6 +806,10 @@ module Crystal
       @target_type.type_id
     end
 
+    def respond_to?(name)
+      name == :node || name == :target_type || @target_type.respond_to?(name)
+    end
+
     def to_s
       "Proxy(#{@target_type})"
     end
