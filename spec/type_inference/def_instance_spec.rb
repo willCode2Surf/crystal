@@ -1,7 +1,16 @@
 require 'spec_helper'
 
 describe 'Type inference: def instance' do
-  test_type = "class Foo[]; #{rw :value}; end"
+  test_type = "
+    class Foo[T]
+      def value=(value : T)
+        @value = value
+      end
+      def value
+        @value
+      end
+    end
+  "
 
   it "reuses type mutation" do
     assert_type(%Q(
@@ -25,8 +34,13 @@ describe 'Type inference: def instance' do
     assert_type(%Q(
       #{test_type}
 
-      class Bar[]
-        #{rw :value}
+      class Bar[T]
+        def value=(value : T)
+          @value = value
+        end
+        def value
+          @value
+        end
       end
 
       def foo(x, y)
@@ -66,7 +80,7 @@ describe 'Type inference: def instance' do
         end
       end
 
-      class Bar[]
+      class Bar
       end
 
       x = Foo.new
@@ -75,7 +89,7 @@ describe 'Type inference: def instance' do
       x.foo)
     mod = infer_type input
 
-    sub = ObjectType.new('Foo').generic!.with_var('@value', ObjectType.new('Bar').generic!)
+    sub = ObjectType.new('Foo').generic!.with_var('@value', ObjectType.new('Bar'))
     obj = ObjectType.new('Foo').generic!.with_var('@value', sub)
     input[3].value.target_def.body.type.should eq(obj)
     input[4].target_def.owner.should eq(obj)
@@ -135,8 +149,8 @@ describe 'Type inference: def instance' do
 
   it "doesn't infect other vars" do
     input = parse %Q(
-      class Node[]
-        def add(x)
+      class Node[T]
+        def add(x : T)
           @left = Node.new
           @left.add(x)
           @right = Node.new
