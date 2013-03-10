@@ -286,7 +286,6 @@ module Crystal
 
   class ObjectType < ClassType
     attr_accessor :instance_vars
-    attr_accessor :string_rep
     attr_reader :hash
     @@id = 0
 
@@ -369,21 +368,21 @@ module Crystal
       obj.types = types
       obj.parents = parents
       obj.type_vars = type_vars
-      obj.string_rep = string_rep
       obj
     end
 
     def to_s
       return name unless generic
       return @to_s if @to_s
-      if string_rep
-        @to_s = string_rep.call(self)
-        if @to_s
-          to_s, @to_s = @to_s, nil
-          return to_s
-        end
-      end
+
       @to_s = "..."
+
+      if type_vars
+        type_vars_to_s = type_vars.map { |name, var| "#{name}: #{var.type ? var.type : '?'}" }
+        @to_s = nil
+        return "#{name}[#{type_vars_to_s.join ', '}]"
+      end
+
       instance_vars_to_s = instance_vars.map {|name, var| "#{name}: #{var.type}"}.join ', '
       @to_s = nil
       "#{name}<#{instance_vars_to_s}>"
@@ -436,7 +435,8 @@ module Crystal
     end
 
     def to_s
-      "Pointer<#{var.type}>"
+      t = type_vars["T"].type
+      "Pointer[#{t ? t : '?'}]"
     end
 
     def llvm_type
@@ -456,6 +456,7 @@ module Crystal
     attr_reader :types
 
     def initialize(*types)
+      # binding.pry if types.any? { |t| t.is_a?(ProxyType) }
       @types = types
     end
 
@@ -787,6 +788,7 @@ module Crystal
     end
 
     def ==(other)
+      other = other.target_type if other.is_a?(ProxyType)
       @target_type == other
     end
 
@@ -795,7 +797,13 @@ module Crystal
     end
 
     def eql?(other)
+      other = other.target_type if other.is_a?(ProxyType)
       @target_type.eql?(other)
+    end
+
+    def equal?(other)
+      other = other.target_type if other.is_a?(ProxyType)
+      @target_type.equal?(other)
     end
 
     def is_a?(type)
@@ -808,6 +816,10 @@ module Crystal
 
     def respond_to?(name)
       name == :node || name == :target_type || @target_type.respond_to?(name)
+    end
+
+    def clone(*args)
+      ProxyType.new(@target_type, @node)
     end
 
     def to_s

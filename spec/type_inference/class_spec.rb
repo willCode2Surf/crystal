@@ -34,8 +34,8 @@ describe 'Type inference: class' do
 
   it "types instance variable" do
     input = parse %(
-      class Foo[]
-        def set(value)
+      class Foo[T]
+        def set(value : T)
           @coco = value
         end
       end
@@ -53,8 +53,8 @@ describe 'Type inference: class' do
 
   it "types instance variable on getter" do
     input = parse %(
-      class Foo[]
-        def set(value)
+      class Foo[T]
+        def set(value : T)
           @coco = value
         end
 
@@ -80,7 +80,7 @@ describe 'Type inference: class' do
     input = parse %(
       require "prelude"
 
-      class Node[]
+      class Node
         def add
           if @next
             @next.add
@@ -102,8 +102,10 @@ describe 'Type inference: class' do
 
   it "types separately method calls that create instances" do
     assert_type(%(
-      class Node[]
-        #{rw :value}
+      class Node[T]
+        def value=(value : T)
+          @value = value
+        end
       end
 
       def gen
@@ -121,9 +123,13 @@ describe 'Type inference: class' do
 
   it "types separately method calls that create instances with two instance vars" do
     assert_type(%(
-      class Node[]
-        #{rw :x}
-        #{rw :y}
+      class Node[X, Y]
+        def x=(x : X)
+          @x = x
+        end
+        def y=(y : Y)
+          @y = y
+        end
       end
 
       def gen

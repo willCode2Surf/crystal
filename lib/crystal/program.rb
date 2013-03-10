@@ -34,16 +34,7 @@ module Crystal
       string.lookup_instance_var('@length').type = int
       string.lookup_instance_var('@c').type = char
 
-      array = @types["Array"] = ObjectType.new "Array", object, self, "T" => Var.new("T")
-      array.string_rep = proc do |type|
-        buffer = type.instance_vars["@buffer"]
-        if buffer
-          element_type = buffer.type.var.type
-          "Array<#{element_type}>"
-        else
-          nil
-        end
-      end
+      @types["Array"] = ObjectType.new "Array", object, self, "T" => Var.new("T")
 
       @types["ARGC_UNSAFE"] = Const.new "ARGC_UNSAFE", Crystal::ARGC.new(int), self
       @types["ARGV_UNSAFE"] = Const.new "ARGV_UNSAFE", Crystal::ARGV.new(pointer_of(pointer_of(char))), self
@@ -62,16 +53,17 @@ module Crystal
       define_primitives
     end
 
-    def lookup_generic_type(type, type_vars)
-      key = type_vars.map { |k, v| [k, v.type] }
-      full_name = type.full_name
+    def lookup_generic_type(type, type_vars, node)
+      key = type_vars.map { |k, v| [k, v.type] }.sort_by { |a| a[0] }
+      full_name = type.internal_full_name
+      type = lookup_type full_name.split('::')
       generic_type = @generic_types[full_name][key]
       unless generic_type
         generic_type = type.clone
         generic_type.type_vars = type_vars
         @generic_types[full_name][key] = generic_type
       end
-      generic_type
+      ProxyType.new(generic_type, node)
     end
 
     def unify(node)

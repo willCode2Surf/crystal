@@ -44,6 +44,8 @@ module Crystal
       check_method_exists untyped_def, error_matches
       check_args_match untyped_def
 
+      old_target_def = self.target_def
+
       if untyped_def.is_a?(External)
         typed_def = untyped_def
         self.target_def = typed_def
@@ -51,24 +53,27 @@ module Crystal
       else
         arg_types = args.map &:type
 
-        # TODO: generics
-        # if untyped_def.type_vars
-        #   new_type_vars = {}
-        #   untyped_def.type_vars.each do |index, name|
-        #     call_type = arg_types[index]
-        #     self_type_type = self_type.type_vars[name].type
-        #     new_type = Type.merge(call_type, self_type_type)
-        #     if new_type != self_type_type
-        #       new_type_vars[name] = Var.new(name, new_type)
-        #     end
-        #   end
+        if untyped_def.type_vars
+          new_type_vars = {}
+          type_vars_changed = false
+          untyped_def.type_vars.each do |index, name|
+            call_type = arg_types[index]
+            self_type_type = self_type.type_vars[name].type
+            new_type = Type.merge(call_type, self_type_type)
+            if new_type != self_type_type
+              type_vars_changed = true
+            end
+            new_type_vars[name] = Var.new(name, new_type)
+          end
 
-        #   unless new_type_vars.empty?
-        #     generic_type = mod.lookup_generic_type(self_type.target_type, new_type_vars)
-        #     self_type.node.type = ProxyType.new(generic_type, self_type.node)
-        #     return
-        #   end
-        # end
+          if type_vars_changed
+            self_type.type_vars.each do |name, var|
+              new_type_vars[name] = Var.new(name, var.type) unless new_type_vars[name]
+            end
+            self_type.node.type = mod.lookup_generic_type(self_type.target_type, new_type_vars, self_type.node)
+            return
+          end
+        end
 
         typed_def = untyped_def.lookup_instance(arg_types) ||
                     self_type.lookup_def_instance(name, arg_types) ||
@@ -92,8 +97,13 @@ module Crystal
         end
       end
 
-      self.bind_to typed_def
-      self.bind_to(block.break) if block
+      if old_target_def
+        self.unbind_from old_target_def
+        self.bind_to typed_def
+      else
+        self.bind_to typed_def
+        self.bind_to(block.break) if block
+      end
     end
 
     def compute_dispatch

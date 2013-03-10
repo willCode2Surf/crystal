@@ -515,10 +515,7 @@ module Crystal
         if type
           node.type = type
         else
-          # TODO: generics
-          # generic_type = mod.lookup_generic_type(node.allocate_type, node.allocate_type.type_vars)
-          # node.type = ProxyType.new(generic_type, node)
-          node.type = ProxyType.new(node.allocate_type.clone, node)
+          node.type = mod.lookup_generic_type(node.allocate_type, node.allocate_type.type_vars, node)
         end
         node.creates_new_type = true
       end
@@ -773,10 +770,7 @@ module Crystal
     end
 
     def visit_pointer_malloc(node)
-      # TODO: generics
-      # generic_type = mod.lookup_generic_type(mod.pointer, mod.pointer.type_vars)
-      # node.type = ProxyType.new(generic_type, node)
-      node.type = ProxyType.new(mod.pointer.clone, node)
+      node.type = mod.lookup_generic_type(mod.pointer, mod.pointer.type_vars, node)
       node.creates_new_type = true
     end
 
@@ -798,13 +792,12 @@ module Crystal
     end
 
     def visit_pointer_cast(node)
+      # TODO: generics?
       type = @vars['type'].type.instance_type
       if type.is_a?(ObjectType)
         node.type = type
       else
-        # TODO: generics?
-        # node.type = ProxyType.new(mod.pointer_of(type), node)
-        node.type = mod.pointer_of(type)
+        node.type = ProxyType.new(mod.pointer_of(type), node)
       end
     end
 
