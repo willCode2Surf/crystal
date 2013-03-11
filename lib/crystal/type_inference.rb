@@ -773,7 +773,9 @@ module Crystal
     end
 
     def visit_pointer_malloc(node)
-      node.type = mod.lookup_generic_type(mod.pointer, mod.pointer.type_vars, node)
+      type = mod.lookup_generic_type(mod.pointer, mod.pointer.type_vars)
+      type = ProxyType.new(mod, type, node, Hash[mod.pointer.type_vars.map { |k, v| [k, Var.new(k)] }])
+      node.type = type
       node.creates_new_type = true
     end
 

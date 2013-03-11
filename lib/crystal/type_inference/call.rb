@@ -66,7 +66,7 @@ module Crystal
         if typed_def
           self.target_def = typed_def
         else
-          # puts "#{obj ? obj.type : scope}.#{name}"
+          # puts "#{obj ? obj.type : scope}.#{name}(#{arg_types.join ', '})"
           typed_def, args = prepare_typed_def_with_args(untyped_def, owner, self_type, arg_types)
           self.target_def = typed_def
 
