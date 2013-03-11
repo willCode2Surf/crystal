@@ -378,7 +378,7 @@ module Crystal
       @to_s = "..."
 
       if type_vars
-        type_vars_to_s = type_vars.map { |name, var| "#{name}: #{var.type ? var.type : '?'}" }
+        type_vars_to_s = type_vars.map { |name, type| "#{name}: #{type ? type : '?'}" }
         @to_s = nil
         return "#{name}[#{type_vars_to_s.join ', '}]"
       end
@@ -393,7 +393,7 @@ module Crystal
     attr_accessor :var
 
     def initialize(parent_type = nil, container = nil, var = Var.new('var'))
-      super("Pointer", parent_type, container, {"T" => Var.new("T")})
+      super("Pointer", parent_type, container, {"T" => nil})
       @var = var
     end
 
@@ -435,7 +435,7 @@ module Crystal
     end
 
     def to_s
-      t = type_vars["T"].type
+      t = type_vars["T"]
       "Pointer[#{t ? t : '?'}]"
     end
 
@@ -763,8 +763,11 @@ module Crystal
   end
 
   class ProxyType < Type
+    attr_accessor :mod
     attr_accessor :target_type
     attr_accessor :node
+    attr_accessor :type_vars
+    attr_accessor :dead
 
     undef metaclass
     undef generic
@@ -782,9 +785,29 @@ module Crystal
     undef full_name
     undef internal_full_name
 
-    def initialize(target_type, node)
+    def initialize(mod, target_type, node, type_vars)
+      @mod = mod
       @target_type = target_type
       @node = node
+      @type_vars = type_vars
+      @type_vars.each do |name, type_var|
+        type_var.add_observer self
+      end
+    end
+
+    def update(from)
+      return if dead
+
+      type_var_types = Hash[type_vars.map { |k, v| [k, v.type] }]
+      type = mod.lookup_generic_type(target_type, type_var_types)
+      return if type.equal?(target_type)
+
+      self.dead = true
+      proxy = ProxyType.new(mod, type, node, @type_vars)
+      node.type = proxy
+    end
+
+    def propagate
     end
 
     def ==(other)
@@ -819,7 +842,7 @@ module Crystal
     end
 
     def clone(*args)
-      ProxyType.new(@target_type, @node)
+      ProxyType.new(@target_type, @node, @type_vars)
     end
 
     def to_s

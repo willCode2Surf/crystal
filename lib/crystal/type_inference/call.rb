@@ -54,25 +54,10 @@ module Crystal
         arg_types = args.map &:type
 
         if untyped_def.type_vars
-          new_type_vars = {}
-          type_vars_changed = false
           untyped_def.type_vars.each do |index, name|
-            call_type = arg_types[index]
-            self_type_type = self_type.type_vars[name].type
-            new_type = Type.merge(call_type, self_type_type)
-            if new_type != self_type_type
-              type_vars_changed = true
-            end
-            new_type_vars[name] = Var.new(name, new_type)
+            self_type.type_vars[name].bind_to self.args[index]
           end
-
-          if type_vars_changed
-            self_type.type_vars.each do |name, var|
-              new_type_vars[name] = Var.new(name, var.type) unless new_type_vars[name]
-            end
-            self_type.node.type = mod.lookup_generic_type(self_type.target_type, new_type_vars, self_type.node)
-            return
-          end
+          return if self_type.dead
         end
 
         typed_def = untyped_def.lookup_instance(arg_types) ||

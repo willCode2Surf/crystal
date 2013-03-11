@@ -155,10 +155,11 @@ module Crystal
           else
             if target_type.generic &&
                 arg.type_restriction.names.length == 1 &&
-                type_var = target_type.type_vars[arg.type_restriction.names.first]
-              arg.type = TypeVarType.new(type_var.name)
+                target_type.type_vars.has_key?(arg.type_restriction.names.first)
+              type_var_name = arg.type_restriction.names.first
+              arg.type = TypeVarType.new(type_var_name)
               node.type_vars ||= {}
-              node.type_vars[i] = type_var.name
+              node.type_vars[i] = type_var_name
             else
               arg.type = lookup_ident_type(arg.type_restriction)
             end
@@ -201,7 +202,7 @@ module Crystal
       else
         type_vars = nil
         if node.type_vars
-          type_vars = node.type_vars.each_with_object({}) { |type_var, hash| hash[type_var] = Var.new(type_var) }
+          type_vars = node.type_vars.each_with_object({}) { |type_var, hash| hash[type_var] = nil }
         end
         type = ObjectType.new node.name, parent, current_type, type_vars
         type.type_vars = parent.type_vars.clone unless node.type_vars
@@ -515,7 +516,9 @@ module Crystal
         if type
           node.type = type
         else
-          node.type = mod.lookup_generic_type(node.allocate_type, node.allocate_type.type_vars, node)
+          type = mod.lookup_generic_type(node.allocate_type, node.allocate_type.type_vars)
+          type = ProxyType.new(mod, type, node, Hash[node.allocate_type.type_vars.map { |k, v| [k, Var.new(k)] }])
+          node.type = type
         end
         node.creates_new_type = true
       end
