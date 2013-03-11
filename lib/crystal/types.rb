@@ -78,16 +78,7 @@ module Crystal
       return type1 if type1.equal?(type2) || type2.nil?
       return type2 if type1.nil?
 
-      types = [type1, type2]
-      all_types = types.map { |type| type.is_a?(UnionType) ? type.types : type }.flatten.uniq(&:type_id)
-
-      union_type_ids = nil
-
-      types.each do |t|
-        return t if t.is_a?(UnionType) && t.types.length == all_types.length && t.types.map(&:type_id) == (union_type_ids ||= all_types.map(&:type_id))
-      end
-
-      UnionType.new(*all_types)
+      type1.program.type_merge(type1, type2)
     end
 
     def self.clone(types)
@@ -109,6 +100,10 @@ module Crystal
 
     def internal_full_name
       @full_name
+    end
+
+    def program
+      @container.program
     end
   end
 
@@ -460,6 +455,10 @@ module Crystal
       @types = types
     end
 
+    def program
+      @types[0].program
+    end
+
     def implements?(other_type)
       raise "'implements?' shouln't be invoked on a UnionType"
     end
@@ -793,6 +792,10 @@ module Crystal
       @type_vars.each do |name, type_var|
         type_var.add_observer self
       end
+    end
+
+    def program
+      @target_type.program
     end
 
     def update(from)

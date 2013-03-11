@@ -48,9 +48,29 @@ module Crystal
 
       @nil_var = Var.new('nil', self.nil)
 
+      @unions = {}
+
       @generic_types = Hash.new { |h, k| h[k] = {} }
 
       define_primitives
+    end
+
+    def program
+      self
+    end
+
+    def type_merge(type1, type2)
+      types = [type1, type2]
+      all_types = types.map! { |type| type.is_a?(UnionType) ? type.types : type }
+      all_types.flatten!
+      all_types.uniq!(&:type_id)
+      all_types.sort_by!(&:type_id)
+      if all_types.length == 1
+        return all_types[0]
+      end
+
+      all_types_ids = all_types.map(&:type_id)
+      @unions[all_types_ids] ||= UnionType.new(*all_types)
     end
 
     def lookup_generic_type(type, type_vars)
