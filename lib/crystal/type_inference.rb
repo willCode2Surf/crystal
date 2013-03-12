@@ -289,11 +289,9 @@ module Crystal
       end
     end
 
-    def maybe_ptr_type(type, ptr)
-      ptr.times do
-        ptr_type = mod.pointer.clone
-        ptr_type.var.type = type
-        type = ptr_type
+    def maybe_ptr_type(type, ptr_count)
+      ptr_count.times do
+        type = mod.pointer_of(type)
       end
       type
     end
@@ -759,28 +757,30 @@ module Crystal
     end
 
     def visit_pointer_of(node)
+      var = lookup_var node.var.name
+      ptr_type = mod.lookup_generic_type(mod.pointer, {"T" => var.type})
+      node.type = ProxyType.new(mod, ptr_type, node, {"T" => var})
       # TODO: generics?
-      ptr = mod.pointer.clone
-      ptr.var = if node.var.is_a?(Var)
-                  var = lookup_var node.var.name
-                  node.var.bind_to var
-                  var
-                else
-                  lookup_instance_var node.var
-                end
-      node.type = ptr
+      # ptr = mod.pointer.clone
+      # ptr.var = if node.var.is_a?(Var)
+      #             var = lookup_var node.var.name
+      #             node.var.bind_to var
+      #             var
+      #           else
+      #             lookup_instance_var node.var
+      #           end
+      # node.type = ptr
       false
     end
 
     def visit_pointer_malloc(node)
-      type = mod.lookup_generic_type(mod.pointer, mod.pointer.type_vars)
-      type = ProxyType.new(mod, type, node, Hash[mod.pointer.type_vars.map { |k, v| [k, Var.new(k)] }])
-      node.type = type
+      type = mod.lookup_generic_type(mod.pointer, {"T" => nil})
+      node.type = ProxyType.new(mod, type, node, {"T" => Var.new("T")})
       node.creates_new_type = true
     end
 
     def visit_pointer_realloc(node)
-      node.type = @scope
+      node.bind_to @scope.node
     end
 
     def visit_pointer_get_value(node)
@@ -788,21 +788,20 @@ module Crystal
     end
 
     def visit_pointer_set_value(node)
-      @scope.var.bind_to @vars['value']
       node.bind_to @vars['value']
     end
 
     def visit_pointer_add(node)
-      node.type = @scope
+      node.bind_to @scope.node
     end
 
     def visit_pointer_cast(node)
-      # TODO: generics?
       type = @vars['type'].type.instance_type
       if type.is_a?(ObjectType)
         node.type = type
       else
-        node.type = ProxyType.new(mod.pointer_of(type), node)
+        ptr_type = mod.lookup_generic_type(mod.pointer, {"T" => type})
+        node.type = ProxyType.new(mod, ptr_type, node, {"T" => Var.new("T", type)})
       end
     end
 

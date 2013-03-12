@@ -142,35 +142,35 @@ module Crystal
         end
 
         unified_type
-      when PointerType
-        unified_type = @pointers_by_id[type.object_id]
-        if unified_type
-          return unified_type
-        end
+      # when PointerType
+      #   unified_type = @pointers_by_id[type.object_id]
+      #   if unified_type
+      #     return unified_type
+      #   end
 
-        unified_type = @pointers[type]
+      #   unified_type = @pointers[type]
 
-        unless unified_type
-          if index = @stack.index(type)
-            unified_type = @pointers[type] = @pointers_by_id[type.object_id] = @stack[index]
-          else
-            @stack.push type
+      #   unless unified_type
+      #     if index = @stack.index(type)
+      #       unified_type = @pointers[type] = @pointers_by_id[type.object_id] = @stack[index]
+      #     else
+      #       @stack.push type
 
-            unified_type = type
-            unified_type.var.set_type unify_type(type.var.type)
+      #       unified_type = type
+      #       unified_type.var.set_type unify_type(type.var.type)
 
-            if existing_type = @pointers[type]
-              unified_type = existing_type
-            else
-              @pointers[type] = unified_type
-            end
-            @pointers_by_id[unified_type.object_id] = unified_type
+      #       if existing_type = @pointers[type]
+      #         unified_type = existing_type
+      #       else
+      #         @pointers[type] = unified_type
+      #       end
+      #       @pointers_by_id[unified_type.object_id] = unified_type
 
-            @stack.pop
-          end
-        end
+      #       @stack.pop
+      #     end
+      #   end
 
-        unified_type
+      #   unified_type
       when UnionType
         unified_type = @unions_by_id[type.object_id]
         return unified_type if unified_type

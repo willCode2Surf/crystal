@@ -14,6 +14,8 @@ module Crystal
     def initialize
       super('main')
 
+      @generic_types = Hash.new { |h, k| h[k] = {} }
+
       object = @types["Object"] = ObjectType.new "Object", nil, self
       value = @types["Value"] = ObjectType.new "Value", object, self
       numeric = @types["Numeric"] = ObjectType.new "Numeric", value, self
@@ -50,8 +52,6 @@ module Crystal
 
       @unions = {}
 
-      @generic_types = Hash.new { |h, k| h[k] = {} }
-
       define_primitives
     end
 
@@ -59,10 +59,10 @@ module Crystal
       self
     end
 
-    def type_merge(type1, type2)
-      types = [type1, type2]
+    def type_merge(*types)
       all_types = types.map! { |type| type.is_a?(UnionType) ? type.types : type }
       all_types.flatten!
+      all_types.compact!
       all_types.uniq!(&:type_id)
       all_types.sort_by!(&:type_id)
       if all_types.length == 1
@@ -152,11 +152,7 @@ module Crystal
     end
 
     def pointer_of(type)
-      p = pointer.clone
-      v = Var.new 'p', type
-      p.var.bind_to v
-      # p.var.type = type
-      p
+      lookup_generic_type(pointer, {"T" => type})
     end
 
     def metaclass

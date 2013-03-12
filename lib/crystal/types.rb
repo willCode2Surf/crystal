@@ -74,11 +74,10 @@ module Crystal
       name
     end
 
-    def self.merge(type1, type2)
-      return type1 if type1.equal?(type2) || type2.nil?
-      return type2 if type1.nil?
-
-      type1.program.type_merge(type1, type2)
+    def self.merge(*types)
+      types = types.compact
+      return nil if types.empty?
+      types.first.program.type_merge(*types)
     end
 
     def self.clone(types)
@@ -385,15 +384,16 @@ module Crystal
   end
 
   class PointerType < ClassType
-    attr_accessor :var
-
-    def initialize(parent_type = nil, container = nil, var = Var.new('var'))
+    def initialize(parent_type = nil, container = nil)
       super("Pointer", parent_type, container, {"T" => nil})
-      @var = var
+    end
+
+    def type
+      type_vars["T"]
     end
 
     def ==(other)
-      equal?(other) || (other.is_a?(PointerType) && var.type == other.var.type) || (other.is_a?(UnionType) && other == self)
+      equal?(other) || (other.is_a?(PointerType) && type_vars == other.type_vars) || (other.is_a?(UnionType) && other == self)
     end
 
     def hash
@@ -403,10 +403,7 @@ module Crystal
     def clone(types_context = {})
       pointer = types_context[type_id] and return pointer
 
-      cloned_var = var.clone
-
-      pointer = types_context[type_id] = PointerType.new @parent_type, @container, cloned_var
-      pointer.var.type = var.type.clone(types_context)
+      pointer = types_context[type_id] = PointerType.new @parent_type, @container
       pointer.defs = defs
       pointer.types = types
       pointer.parents = parents
@@ -414,8 +411,8 @@ module Crystal
     end
 
     def full_name
-      if @var.type
-        "#{@var.type.full_name}*"
+      if t = type_vars["T"]
+        "#{t.full_name}*"
       else
         super
       end
@@ -430,16 +427,16 @@ module Crystal
     end
 
     def to_s
-      t = type_vars["T"]
+      t = type
       "Pointer[#{t ? t : '?'}]"
     end
 
     def llvm_type
-      @llvm_type ||= var.type.is_a?(StructType) ? var.type.llvm_type : LLVM::Pointer(var.type.llvm_type)
+      @llvm_type ||= type.is_a?(StructType) ? type.llvm_type : LLVM::Pointer(type.llvm_type)
     end
 
     def llvm_name
-      @llvm_name ||= "Pointer<#{var.type.llvm_name}>"
+      @llvm_name ||= "Pointer<#{type.llvm_name}>"
     end
 
     def llvm_size
