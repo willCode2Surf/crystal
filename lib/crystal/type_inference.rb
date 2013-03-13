@@ -774,11 +774,11 @@ module Crystal
     end
 
     def visit_pointer_realloc(node)
-      node.bind_to @scope.node
+      node.bind_to @vars['self']
     end
 
     def visit_pointer_get_value(node)
-      node.bind_to @scope.element_type
+      node.bind_to @scope.type_vars["T"]
     end
 
     def visit_pointer_set_value(node)
@@ -786,7 +786,7 @@ module Crystal
     end
 
     def visit_pointer_add(node)
-      node.bind_to @scope.node
+      node.bind_to @vars['self']
     end
 
     def visit_pointer_cast(node)

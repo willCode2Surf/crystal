@@ -849,7 +849,11 @@ module Crystal
     end
 
     def to_s
+      if dead
+        "DEAD(#{@target_type})"
+      else
       "Proxy(#{@target_type})"
+    end
     end
 
     def method_missing(name, *args, &block)
