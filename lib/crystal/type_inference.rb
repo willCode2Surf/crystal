@@ -757,19 +757,13 @@ module Crystal
     end
 
     def visit_pointer_of(node)
-      var = lookup_var node.var.name
+      var = if node.var.is_a?(Var)
+                  lookup_var node.var.name
+                else
+                  lookup_instance_var node.var
+                end
       ptr_type = mod.lookup_generic_type(mod.pointer, {"T" => var.type})
       node.type = ProxyType.new(mod, ptr_type, node, {"T" => var})
-      # TODO: generics?
-      # ptr = mod.pointer.clone
-      # ptr.var = if node.var.is_a?(Var)
-      #             var = lookup_var node.var.name
-      #             node.var.bind_to var
-      #             var
-      #           else
-      #             lookup_instance_var node.var
-      #           end
-      # node.type = ptr
       false
     end
 
@@ -784,7 +778,7 @@ module Crystal
     end
 
     def visit_pointer_get_value(node)
-      node.bind_to @scope.var
+      node.bind_to @scope.element_type
     end
 
     def visit_pointer_set_value(node)

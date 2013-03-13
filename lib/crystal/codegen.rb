@@ -441,19 +441,19 @@ module Crystal
     end
 
     def visit_pointer_malloc(node)
-      @last = @builder.array_malloc(node.type.var.llvm_type, @vars['size'][:ptr])
+      @last = @builder.array_malloc(node.type.element_type.llvm_type, @vars['size'][:ptr])
     end
 
     def visit_pointer_realloc(node)
       casted_ptr = @builder.bit_cast llvm_self, LLVM::Pointer(LLVM::Int8)
       size = @vars['size'][:ptr]
-      size = @builder.mul size, int(@type.var.type.llvm_size)
+      size = @builder.mul size, int(@type.element_type.llvm_size)
       reallocated_ptr = realloc casted_ptr, size
-      @last = @builder.bit_cast reallocated_ptr, LLVM::Pointer(@type.var.llvm_type)
+      @last = @builder.bit_cast reallocated_ptr, LLVM::Pointer(@type.element_type.llvm_type)
     end
 
     def visit_pointer_get_value(node)
-      if @type.var.type.union? || @type.var.type.is_a?(StructType)
+      if @type.element_type.union? || @type.element_type.is_a?(StructType)
         @last = llvm_self
       else
         @last = @builder.load llvm_self
@@ -467,7 +467,7 @@ module Crystal
         @builder.store @fun.params[1], value
       end
 
-      codegen_assign llvm_self, @type.var.type, node.type, value
+      codegen_assign llvm_self, @type.element_type, node.type, value
       @last = value
     end
 

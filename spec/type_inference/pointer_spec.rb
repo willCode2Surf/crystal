@@ -2,7 +2,7 @@ require 'spec_helper'
 
 describe 'Type inference: pointer' do
   it "types int pointer" do
-    assert_type('a = 1; a.ptr') { PointerType.of(int) }
+    assert_type('a = 1; a.ptr') { pointer_of(int) }
   end
 
   it "types pointer value" do
@@ -27,19 +27,19 @@ describe 'Type inference: pointer' do
   end
 
   it "types pointer add" do
-    assert_type('a = 1; a.ptr + 1') { PointerType.of(int) }
+    assert_type('a = 1; a.ptr + 1') { pointer_of(int) }
   end
 
   it "types Pointer.malloc" do
-    assert_type('p = Pointer.malloc(10); p.value = 1; p') { PointerType.of(int) }
+    assert_type('p = Pointer.malloc(10); p.value = 1; p') { pointer_of(int) }
   end
 
   it "types realloc" do
-    assert_type('p = Pointer.malloc(10); p.value = 1; x = p.realloc(20); x') { PointerType.of(int) }
+    assert_type('p = Pointer.malloc(10); p.value = 1; x = p.realloc(20); x') { pointer_of(int) }
   end
 
   it "type pointer casting" do
-    assert_type('a = 1; a.ptr.as(Char)') { PointerType.of(char) }
+    assert_type('a = 1; a.ptr.as(Char)') { pointer_of(char) }
   end
 
   it "type pointer casting of object type" do

@@ -1,6 +1,6 @@
 require "comparable"
 
-class Pointer
+class Pointer[T]
   include Comparable
 
   def nil?
@@ -23,7 +23,7 @@ class Pointer
     (self + offset).value
   end
 
-  def []=(offset, value)
+  def []=(offset, value : T)
     (self + offset).value = value
   end
 

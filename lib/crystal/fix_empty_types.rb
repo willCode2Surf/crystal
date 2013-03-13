@@ -83,14 +83,16 @@ module Crystal
         type.instance_vars.each do |name, ivar|
           fix_node(ivar)
         end
-      when PointerType
-        type.var.type = @mod.nil unless type.var.type
       when UnionType
         type.types.each do |type|
           fix_type(type)
         end
       when ProxyType
-        fix_type(type.target_type)
+        if type.target_type.is_a?(PointerType)
+          type.type_vars["T"].type = @mod.nil unless type.type_vars["T"].type
+        else
+          fix_type(type.target_type)
+        end
       end
     end
   end

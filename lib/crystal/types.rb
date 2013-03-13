@@ -388,7 +388,7 @@ module Crystal
       super("Pointer", parent_type, container, {"T" => nil})
     end
 
-    def type
+    def element_type
       type_vars["T"]
     end
 
@@ -411,8 +411,8 @@ module Crystal
     end
 
     def full_name
-      if t = type_vars["T"]
-        "#{t.full_name}*"
+      if element_type
+        "#{element_type.full_name}*"
       else
         super
       end
@@ -427,16 +427,15 @@ module Crystal
     end
 
     def to_s
-      t = type
-      "Pointer[#{t ? t : '?'}]"
+      "Pointer[#{element_type || '?'}]"
     end
 
     def llvm_type
-      @llvm_type ||= type.is_a?(StructType) ? type.llvm_type : LLVM::Pointer(type.llvm_type)
+      @llvm_type ||= element_type.is_a?(StructType) ? element_type.llvm_type : LLVM::Pointer(element_type.llvm_type)
     end
 
     def llvm_name
-      @llvm_name ||= "Pointer<#{type.llvm_name}>"
+      @llvm_name ||= "Pointer<#{element_type.llvm_name}>"
     end
 
     def llvm_size

@@ -146,7 +146,7 @@ class Crystal::Program
     types['Array'].clone.
       with_var('@length', int).
       with_var('@capacity', int).
-      with_var('@buffer', PointerType.of(type))
+      with_var('@buffer', pointer_of(type))
   end
 end
 
@@ -159,14 +159,6 @@ class Crystal::ObjectType
   def generic!
     @type_vars = []
     self
-  end
-end
-
-class Crystal::PointerType
-  def self.of(type)
-    pointer = new
-    pointer.var.type = type
-    pointer
   end
 end
 

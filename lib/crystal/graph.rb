@@ -58,8 +58,9 @@ module Crystal
     def add_object_type_edges(node, type)
       if type.name == "String"
         # nothing
-      elsif type.name == "Array"
-        add_edges node, type.instance_vars["@buffer"].type.var.type
+      # elsif type.name == "Array"
+      #   binding.pry
+      #   add_edges node, type.instance_vars["@buffer"].type.var.type
       elsif type.name == "Hash"
         entry_type = type.instance_vars["@first"] && type.instance_vars["@first"].type
         if entry_type.is_a?(UnionType)
@@ -84,7 +85,7 @@ module Crystal
       if type.is_a?(UnionType)
         type.types.each { |t| add_edges node, t, label, style }
       elsif type.is_a?(PointerType)
-        add_edges node, type.var.type, label, 'dashed'
+        add_edges node, type.type_vars["T"], label, 'dashed'
       else
         @g.add_edges node, type_node(type), :label => label, :style => style
       end

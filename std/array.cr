@@ -91,7 +91,7 @@ class Array[T]
     insert 0, obj
   end
 
-  def <<(value)
+  def <<(value : T)
     push(value)
   end
 

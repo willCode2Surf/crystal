@@ -341,7 +341,7 @@ module Crystal
           if mod.nil.equal?(self.args[i].type) && expected_type.pointer_type?
             nil_conversions ||= []
             nil_conversions << i
-          elsif mod.string.equal?(self.args[i].type) && expected_type.is_a?(PointerType) && mod.char.equal?(expected_type.var.type)
+          elsif mod.string.equal?(self.args[i].type) && expected_type.is_a?(PointerType) && mod.char.equal?(expected_type.element_type)
             string_conversions ||= []
             string_conversions << i
           else
