@@ -60,6 +60,7 @@ module Crystal
     end
 
     def type_merge(*types)
+      types = types.reject { |type| type.is_a?(ProxyType) && type.dead }
       all_types = types.map! { |type| type.is_a?(UnionType) ? type.types : type }
       all_types.flatten!
       all_types.compact!
