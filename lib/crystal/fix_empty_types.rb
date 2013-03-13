@@ -89,7 +89,10 @@ module Crystal
         end
       when ProxyType
         if type.target_type.is_a?(PointerType)
-          type.type_vars["T"].type = @mod.nil unless type.type_vars["T"].type
+          unless type.type_vars["T"].type
+            type.type_vars["T"].type = @mod.nil
+            type.target_type.element_type = @mod.nil
+          end
         else
           fix_type(type.target_type)
         end

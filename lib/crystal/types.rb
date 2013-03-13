@@ -392,6 +392,10 @@ module Crystal
       type_vars["T"]
     end
 
+    def element_type=(type)
+      type_vars["T"] = type
+    end
+
     def ==(other)
       equal?(other) || (other.is_a?(PointerType) && type_vars == other.type_vars) || (other.is_a?(UnionType) && other == self)
     end
