@@ -70,24 +70,19 @@ module Crystal
       name
     end
 
-    def self.merge(type1, type2)
-      return type1 if type1.equal?(type2)
-
-      types = [type1, type2]
-      all_types = types.map { |type| type.is_a?(UnionType) ? type.types : type }.flatten.uniq(&:object_id)
-
-      union_object_ids = nil
-
-      types.each do |t|
-        return t if t.is_a?(UnionType) && t.types.length == all_types.length && t.types.map(&:object_id) == (union_object_ids ||= all_types.map(&:object_id))
-      end
-
-      UnionType.new(*all_types)
+    def self.merge(*types)
+      types = types.compact
+      return nil if types.empty?
+      types.first.program.type_merge(*types)
     end
 
     def self.clone(types)
       types_context = {}
       types.map { |type| type.clone(types_context) }
+    end
+
+    def program
+      @container.program
     end
   end
 
@@ -182,11 +177,11 @@ module Crystal
     end
 
     def add_def_instance(name, arg_types, typed_def)
-      @def_instances[[name] + arg_types.map(&:object_id)] = typed_def
+      @def_instances[[name] + arg_types.map(&:type_id)] = typed_def
     end
 
     def lookup_def_instance(name, arg_types)
-      @def_instances[[name] + arg_types.map(&:object_id)]
+      @def_instances[[name] + arg_types.map(&:type_id)]
     end
 
     def has_restricted_defs?(name)
@@ -219,8 +214,8 @@ module Crystal
     end
 
     def lookup_type(names, already_looked_up = {})
-      return nil if already_looked_up[object_id]
-      already_looked_up[object_id] = true
+      return nil if already_looked_up[type_id]
+      already_looked_up[type_id] = true
 
       type = self
       names.each do |name|
@@ -345,9 +340,9 @@ module Crystal
     def clone(types_context = {})
       return self if !generic && Crystal::GENERIC
 
-      obj = types_context[object_id] and return obj
+      obj = types_context[type_id] and return obj
 
-      obj = types_context[object_id] = ObjectType.new name, @parent_type, @container
+      obj = types_context[type_id] = ObjectType.new name, @parent_type, @container
       obj.instance_vars = Hash[instance_vars.map do |name, var|
         cloned_var = var.clone
         cloned_var.type = var.type.clone(types_context) if var.type
@@ -396,11 +391,11 @@ module Crystal
     end
 
     def clone(types_context = {})
-      pointer = types_context[object_id] and return pointer
+      pointer = types_context[type_id] and return pointer
 
       cloned_var = var.clone
 
-      pointer = types_context[object_id] = PointerType.new @parent_type, @container, cloned_var
+      pointer = types_context[type_id] = PointerType.new @parent_type, @container, cloned_var
       pointer.var.type = var.type.clone(types_context)
       pointer.defs = defs
       pointer.types = types
@@ -535,6 +530,10 @@ module Crystal
     def clone(types_context = {})
       cloned = types_context[object_id] and return cloned
       types_context[object_id] = UnionType.new(*types.map { |type| type.clone(types_context) })
+    end
+
+    def program
+      @types[0].program
     end
 
     def name
@@ -761,6 +760,105 @@ module Crystal
 
     def self.parents
       []
+    end
+  end
+
+  class ProxyType < Type
+    attr_accessor :mod
+    attr_accessor :target_type
+    attr_accessor :node
+    attr_accessor :type_vars
+    attr_accessor :dead
+
+    undef metaclass
+    undef instance_type
+    undef each
+    undef union?
+    undef nilable?
+    undef nil_type?
+    undef nilable_able?
+    undef pointer_type?
+    undef passed_as_self?
+    undef is_restriction_of?
+    undef implements?
+    undef filter_by
+    undef full_name
+    undef internal_full_name
+
+    def initialize(mod, target_type, node, type_vars)
+      @mod = mod
+      @target_type = target_type
+      @node = node
+      @type_vars = type_vars
+      @type_vars.each do |name, type_var|
+        type_var.add_observer self
+      end
+    end
+
+    def program
+      @target_type.program
+    end
+
+    def update(from)
+      return if dead
+
+      type_var_types = Hash[type_vars.map { |k, v| [k, v.type] }]
+      type = mod.lookup_generic_type(target_type, type_var_types)
+      return if type.equal?(target_type)
+
+      self.dead = true
+      proxy = ProxyType.new(mod, type, node, @type_vars)
+      node.type = proxy
+    end
+
+    def propagate
+    end
+
+    def ==(other)
+      other = other.target_type if other.is_a?(ProxyType)
+      @target_type == other
+    end
+
+    def hash
+      @target_type.hash
+    end
+
+    def eql?(other)
+      other = other.target_type if other.is_a?(ProxyType)
+      @target_type.eql?(other)
+    end
+
+    def equal?(other)
+      other = other.target_type if other.is_a?(ProxyType)
+      @target_type.equal?(other)
+    end
+
+    def is_a?(type)
+      type == ProxyType || @target_type.is_a?(type)
+    end
+
+    def type_id
+      @target_type.type_id
+    end
+
+    def respond_to?(name)
+      name == :node || name == :target_type || @target_type.respond_to?(name)
+    end
+
+    def clone(*args)
+      ProxyType.new(@target_type, @node, @type_vars)
+    end
+
+    def to_s
+      if dead
+        "DEAD(#{@target_type})"
+      else
+      "Proxy(#{@target_type})"
+    end
+    end
+
+    def method_missing(name, *args, &block)
+      @target_type.send name, *args, &block
     end
   end
 end

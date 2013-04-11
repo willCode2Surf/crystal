@@ -16,8 +16,8 @@ module Crystal
       return unless can_calculate_type?
 
       # Ignore extra recalculations when more than one argument changes at the same time
-      types_signature = args.map { |arg| arg.type.object_id }
-      types_signature << obj.type.object_id if obj
+      types_signature = args.map { |arg| arg.type.type_id }
+      types_signature << obj.type.type_id if obj
       return if @types_signature == types_signature
       @types_signature = types_signature
 
@@ -43,6 +43,8 @@ module Crystal
 
       check_method_exists untyped_def, error_matches
       check_args_match untyped_def
+
+      old_target_def = self.target_def
 
       if untyped_def.is_a?(External)
         typed_def = untyped_def
@@ -72,8 +74,13 @@ module Crystal
         end
       end
 
-      self.bind_to typed_def
-      self.bind_to(block.break) if block
+      if old_target_def
+        self.unbind_from old_target_def
+        self.bind_to typed_def
+      else
+        self.bind_to typed_def
+        self.bind_to(block.break) if block
+      end
     end
 
     def compute_dispatch

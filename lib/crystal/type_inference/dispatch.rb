@@ -23,7 +23,7 @@ module Crystal
     def recalculate(call)
       for_each_obj do |obj_type|
         for_each_args do |arg_types|
-          call_key = [obj_type.object_id, arg_types.map(&:object_id)]
+          call_key = [obj_type.type_id, arg_types.map(&:type_id)]
           next if @calls[call_key]
 
           subcall = Call.new(obj_type ? Var.new('%self', obj_type) : nil, name, arg_types.map.with_index { |arg_type, i| Var.new("%arg#{i}", arg_type) })
@@ -45,7 +45,7 @@ module Crystal
       return if @simplified
       new_calls = {}
       @calls.values.each do |call|
-        new_calls[[(call.obj ? call.obj.type : nil).object_id] + call.args.map { |arg| arg.type.object_id }] = call
+        new_calls[[(call.obj ? call.obj.type : nil).type_id] + call.args.map { |arg| arg.type.type_id }] = call
       end
       @calls = new_calls
       @simplified = true

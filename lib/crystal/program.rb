@@ -13,6 +13,9 @@ module Crystal
     def initialize
       super('main')
 
+      @generic_types = Hash.new { |h, k| h[k] = {} }
+      @unions = {}
+
       object = @types["Object"] = ObjectType.new "Object", nil, self
       value = @types["Value"] = ObjectType.new "Value", object, self
       numeric = @types["Numeric"] = ObjectType.new "Numeric", value, self
@@ -59,6 +62,39 @@ module Crystal
 
       define_primitives
     end
+
+    def program
+      self
+    end
+
+    def type_merge(*types)
+      types = types.reject { |type| type.is_a?(ProxyType) && type.dead }
+      all_types = types.map! { |type| type.is_a?(UnionType) ? type.types : type }
+      all_types.flatten!
+      all_types.compact!
+      all_types.uniq!(&:type_id)
+      all_types.sort_by!(&:type_id)
+      if all_types.length == 1
+        return all_types[0]
+      end
+
+      all_types_ids = all_types.map(&:type_id)
+      @unions[all_types_ids] ||= UnionType.new(*all_types)
+    end
+
+    def lookup_generic_type(type, type_vars)
+      key = type_vars.map { |k, v| [k, v.type_id] }.sort_by { |a| a[0] }
+      full_name = type.internal_full_name
+      type = lookup_type full_name.split('::')
+      generic_type = @generic_types[full_name][key]
+      unless generic_type
+        generic_type = type.clone
+        generic_type.type_vars = type_vars
+        @generic_types[full_name][key] = generic_type
+      end
+      generic_type
+    end
+
 
     def unify(node)
       @unify_visitor ||= UnifyVisitor.new

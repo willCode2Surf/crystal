@@ -10,7 +10,7 @@ module Crystal
     end
 
     def type=(type)
-      return if type.nil? || @type.object_id == type.object_id
+      return if type.nil? || @type.type_id == type.type_id
 
       set_type(type)
       notify_observers
@@ -34,17 +34,30 @@ module Crystal
       if @dependencies.length == 1 || !@type
         new_type = node.type
       else
-        new_type = Type.merge(@type, node.type)
+        new_type = Type.merge *@dependencies.map(&:type)
       end
-      return if @type.object_id == new_type.object_id
+      return if @type.type_id == new_type.type_id
       set_type(new_type)
       @dirty = true
       propagate
     end
 
+    def unbind_from(node)
+      return unless @dependencies
+      idx = @dependencies.index { |d| d.object_id == node.object_id }
+      @dependencies.delete_at(idx) if idx
+      node.remove_observer self
+    end
+
     def add_observer(observer, func = :update)
       @observers ||= []
       @observers << [observer, func]
+    end
+
+    def remove_observer(observer)
+      return unless @observers
+      idx = @observers.index { |o| o.object_id == observer.object_id }
+      @observers.delete_at(idx) if idx
     end
 
     def notify_observers
@@ -63,10 +76,10 @@ module Crystal
       if @type.nil? || dependencies.length == 1
         new_type = from.type
       else
-        new_type = Type.merge(@type, from.type)
+        new_type = Type.merge *@dependencies.map(&:type)
       end
 
-      return if @type.object_id == new_type.object_id
+      return if @type.type_id == new_type.type_id
       set_type(new_type)
       @dirty = true
     end
