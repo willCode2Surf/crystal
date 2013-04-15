@@ -48,6 +48,7 @@ module Crystal
   class Def
     attr_accessor :owner
     attr_accessor :instances
+    attr_accessor :instance_vars
 
     def add_instance(a_def, arg_types = a_def.args.map(&:type))
       @instances ||= {}
@@ -56,6 +57,11 @@ module Crystal
 
     def lookup_instance(arg_types)
       @instances && @instances[arg_types]
+    end
+
+    def lookup_instance_var(name)
+      @instance_vars ||= {}
+      @instance_vars[name] ||= Var.new(name)
     end
   end
 

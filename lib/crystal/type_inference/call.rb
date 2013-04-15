@@ -56,17 +56,49 @@ module Crystal
                     self_type.lookup_def_instance(name, arg_types) ||
                     parent_visitor.lookup_def_instance(owner, untyped_def, arg_types)
         if typed_def
+          if typed_def.is_a?(Type)
+            new_self_type = ProxyType.new mod, typed_def, self_type.node
+            self_type.node.type = new_self_type
+            return
+          end
+
           self.target_def = typed_def
         else
-          # puts "#{obj ? obj.type : scope}.#{name}"
+          # puts "#{obj ? obj.type : scope}.#{name}(#{arg_types.join ", "})"
           typed_def, args = prepare_typed_def_with_args(untyped_def, owner, self_type, arg_types)
           self.target_def = typed_def
 
           if typed_def.body
             bubbling_exception do
+              if self_type.is_a?(ProxyType)
+                self_type.target_type.instance_vars.each do |name, var|
+                  typed_def_var = typed_def.lookup_instance_var(name)
+                  typed_def_var.type = var.type
+                  typed_def_var.bind_to typed_def_var
+                end
+              elsif self_type.is_a?(ObjectType)
+                typed_def.instance_vars = self_type.instance_vars
+              end
+
               visitor = TypeVisitor.new(@mod, args, self_type, parent_visitor, [owner, untyped_def, arg_types, typed_def, self])
               typed_def.body.accept visitor
+
               self.creates_new_type = typed_def.creates_new_type = typed_def.body.creates_new_type
+
+              if self_type.is_a?(ProxyType) && self_type.target_type.instance_vars != typed_def.instance_vars
+                self_type.dead = true
+
+                new_self_type = mod.lookup_generic_type(self_type, typed_def.instance_vars)
+                new_self_type = ProxyType.new mod, new_self_type, self_type.node
+
+                if Crystal::CACHE && !block && !creates_new_type
+                  self_type.add_def_instance(name, arg_types, new_self_type.target_type)
+                  new_self_type.add_def_instance(name, arg_types, typed_def)
+                end
+
+                self_type.node.type = new_self_type
+                return
+              end
             end
           end
 

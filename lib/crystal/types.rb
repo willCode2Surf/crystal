@@ -767,7 +767,6 @@ module Crystal
     attr_accessor :mod
     attr_accessor :target_type
     attr_accessor :node
-    attr_accessor :type_vars
     attr_accessor :dead
 
     undef metaclass
@@ -785,33 +784,14 @@ module Crystal
     undef full_name
     undef internal_full_name
 
-    def initialize(mod, target_type, node, type_vars)
+    def initialize(mod, target_type, node)
       @mod = mod
       @target_type = target_type
       @node = node
-      @type_vars = type_vars
-      @type_vars.each do |name, type_var|
-        type_var.add_observer self
-      end
     end
 
     def program
       @target_type.program
-    end
-
-    def update(from)
-      return if dead
-
-      type_var_types = Hash[type_vars.map { |k, v| [k, v.type] }]
-      type = mod.lookup_generic_type(target_type, type_var_types)
-      return if type.equal?(target_type)
-
-      self.dead = true
-      proxy = ProxyType.new(mod, type, node, @type_vars)
-      node.type = proxy
-    end
-
-    def propagate
     end
 
     def ==(other)

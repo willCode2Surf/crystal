@@ -82,14 +82,14 @@ module Crystal
       @unions[all_types_ids] ||= UnionType.new(*all_types)
     end
 
-    def lookup_generic_type(type, type_vars)
-      key = type_vars.map { |k, v| [k, v.type_id] }.sort_by { |a| a[0] }
+    def lookup_generic_type(type, instance_vars)
+      key = instance_vars.map { |k, v| [k, v.type_id] }.sort_by { |a| a[0] }
       full_name = type.internal_full_name
       type = lookup_type full_name.split('::')
       generic_type = @generic_types[full_name][key]
       unless generic_type
         generic_type = type.clone
-        generic_type.type_vars = type_vars
+        generic_type.instance_vars = instance_vars
         @generic_types[full_name][key] = generic_type
       end
       generic_type

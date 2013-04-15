@@ -334,7 +334,8 @@ module Crystal
 
       new_instance_var = mark_as_nilable && !@scope.has_instance_var?(node.name)
 
-      var = @scope.lookup_instance_var node.name
+      # @call[3] == typed_def
+      var = @call[3].lookup_instance_var node.name
       var.bind_to mod.nil_var if mark_as_nilable && new_instance_var
       node.bind_to var
       var
@@ -500,7 +501,13 @@ module Crystal
         node.type = node.allocate_type
       else
         type = lookup_object_type(node.allocate_type.name)
-        node.type = type ? type : node.allocate_type.clone
+        if type
+          node.type = type
+        else
+          type = mod.lookup_generic_type(node.allocate_type, {})
+          type = ProxyType.new(mod, type, node)
+          node.type = type
+        end
         node.creates_new_type = true
       end
     end
